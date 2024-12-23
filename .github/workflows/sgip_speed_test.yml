@@ -14,5 +14,5 @@ jobs:
 
       - name: Run the script
         run: |
-          chmod +x /path/to/your/script.sh
-          /path/to/your/script.sh
+          chmod +x /path/to/your/FDIP-cesu.sh
+          /path/to/your/FDIP-cesu.sh
