@@ -55,6 +55,7 @@ echo "==================筛选下载速度高于 10mb/s 的IP地址并添加国�
 awk -F, -v country_idx="$country_index" '
 NR > 1 && $6 > 10 && !seen[$1]++ {
     country = $country_idx
+    print "IP: " $1 ", 国家: " country  # 调试信息，输出 IP 和国家字段
     if (country == "" || country ~ /^[0-9]+$/) country = "未知"  # 如果国家为空或为数字，则标记为"未知"
     print $1 "#" country
 }' "${CFST_DIR}/ip.csv" > "${CFST_DIR}/gfip.txt" || { echo "筛选 IP 失败！"; exit 1; }
