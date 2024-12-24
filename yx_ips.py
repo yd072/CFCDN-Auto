@@ -11,7 +11,7 @@ headers = {
 
 # 定义目标网址
 urls = [
-    "https://stock.hostmonit.com/CloudFlareYes",  # 示例 URL
+    "https://stock.hostmonit.com/CloudFlareYes",
 ]
 
 # 定义延迟数据的正则表达式
@@ -20,10 +20,9 @@ latency_pattern = re.compile(r'(\d+(\.\d+)?)\s*(ms|毫秒|milliseconds|秒)?')
 # 提取表格数据的函数
 def extract_table_data(url):
     try:
-        # 发送请求
         response = requests.get(url, headers=headers, timeout=10)
         
-        # 打印请求的状态码和网页的前500个字符，确认请求是否成功
+        # 打印返回状态码和前500个字符
         print(f"Request to {url} returned status code {response.status_code}")
         print(f"First 500 characters of page content:\n{response.text[:500]}")  # 打印前500字符
 
@@ -54,13 +53,8 @@ def process_site_data(url):
                 columns = row.find_all('td')
                 if len(columns) >= 3:
                     ip_address = columns[1].text.strip()  # 提取 IP 地址
-                    latency_text = columns[2].text.strip()  # 提取延迟
-                    latency_match = latency_pattern.match(latency_text)
-                    if latency_match:
-                        print(f"Extracted IP: {ip_address} with latency: {latency_text}")  # 打印提取的 IP 地址和延迟
-                        data.append(ip_address)
-        else:
-            print(f"URL not matched for IP extraction: {url}")
+                    print(f"Extracted IP: {ip_address}")  # 打印提取的 IP 地址
+                    data.append(ip_address)
 
     except Exception as e:
         print(f"Error processing {url}: {e}")
