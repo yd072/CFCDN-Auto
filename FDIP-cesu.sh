@@ -30,12 +30,12 @@ echo "======================运行 CloudflareSpeedTest =========================
 echo "===================打印ip.csv文件的前几行====================="
 head -n 5 "${CFST_DIR}/ip.csv"
 
-# 检查并提取国家字段的列号
+# 获取列头并手动确定“国家”列
 echo "===================检测国家字段列号====================="
 header=$(head -1 "${CFST_DIR}/ip.csv")
 IFS=',' read -r -a columns <<< "$header"
 
-# 寻找"国家"字段所在列
+# 手动检查列头，找到“国家”字段所在的列
 country_index=-1
 for i in "${!columns[@]}"; do
     if [[ "${columns[$i]}" == "国家" ]]; then
