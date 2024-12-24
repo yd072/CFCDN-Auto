@@ -16,11 +16,11 @@ jobs:
     - name: Show git status
       run: git status  # 查看当前 git 状态
 
-    - name: Show git remote
+    - name: Show remote URL
       run: git remote -v  # 查看远程仓库 URL
 
-    - name: Show git log
-      run: git log --oneline -n 10  # 查看最近的 10 个提交
+    - name: Show git config
+      run: git config --list  # 查看 git 配置
 
     - name: Set up Node.js
       uses: actions/setup-node@v2
@@ -45,7 +45,6 @@ jobs:
 
     - name: Commit and push results
       run: |
-        set -x  # 启用调试模式
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         git add gf-ip.txt
