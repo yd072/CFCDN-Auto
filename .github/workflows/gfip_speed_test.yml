@@ -1,4 +1,4 @@
-name: SGIP Speed Test
+name: GFIP Speed Test
 
 on:
   workflow_dispatch:  # 手动触发
@@ -28,8 +28,8 @@ jobs:
 
     - name: Run shell script
       run: |
-        chmod +x FDIP-cesu.sh
-        ./FDIP-cesu.sh
+        chmod +x GFIP-cesu.sh
+        ./GFIP-cesu.sh
 
     - name: Commit and push results
       run: |
