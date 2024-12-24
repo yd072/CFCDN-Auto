@@ -1,57 +1,47 @@
-import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
-import re
+import time
 
-# 定义请求头
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Referer': 'https://example.com',
-}
-
-# 定义目标网址
-urls = [
-    "https://stock.hostmonit.com/CloudFlareYes",
-]
-
-# 定义延迟数据的正则表达式
-latency_pattern = re.compile(r'(\d+(\.\d+)?)\s*(ms|毫秒|milliseconds|秒)?')
-
-# 提取表格数据的函数
-def extract_table_data(url):
+# 设置无头模式，使用 Selenium 启动浏览器
+def extract_table_data_selenium(url):
+    options = Options()
+    options.add_argument("--headless")  # 不打开浏览器窗口，后台运行
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    
     try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            print(f"Successfully fetched data from {url}")  # 调试输出
-            print(f"Page content preview:\n{response.text[:500]}")  # 打印前500个字符
-            soup = BeautifulSoup(response.content, 'html.parser')
-            return soup
-        else:
-            print(f"Failed to fetch data from {url}. Status code: {response.status_code}")
-    except requests.RequestException as e:
-        print(f"Request failed for {url}: {e}")
-    return None
+        driver.get(url)
+        time.sleep(5)  # 等待页面加载完成
+
+        # 获取渲染后的页面源代码
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        return soup
+    except Exception as e:
+        print(f"Error loading page with Selenium: {e}")
+        return None
+    finally:
+        driver.quit()
 
 # 处理每个网址的数据
 def process_site_data(url):
     print(f"Processing URL: {url}")
-    soup = extract_table_data(url)
+    soup = extract_table_data_selenium(url)
     if not soup:
         print(f"No data found for {url}")
         return []
 
     data = []
     try:
-        # 针对 stock.hostmonit.com 网站
-        if "stock.hostmonit.com" in url:
-            rows = soup.find_all('tr', class_=re.compile(r'el-table__row'))
-            print(f"Found {len(rows)} rows in stock.hostmonit.com")  # 打印找到的行数
-            for row in rows:
-                columns = row.find_all('td')
-                if len(columns) >= 3:
-                    ip_address = columns[1].text.strip()  # 只提取 IP 地址
-                    print(f"Extracted IP: {ip_address}")  # 打印提取的 IP 地址
-                    data.append(ip_address)
+        rows = soup.find_all('tr', class_=re.compile(r'el-table__row'))
+        print(f"Found {len(rows)} rows in stock.hostmonit.com")
+        for row in rows:
+            columns = row.find_all('td')
+            if len(columns) >= 3:
+                ip_address = columns[1].text.strip()  # 提取 IP 地址
+                print(f"Extracted IP: {ip_address}")  # 打印提取的 IP 地址
+                data.append(ip_address)
 
     except Exception as e:
         print(f"Error processing {url}: {e}")
