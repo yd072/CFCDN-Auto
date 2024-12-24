@@ -12,9 +12,7 @@ headers = {
 
 # 定义目标网址
 urls = [
-
     "https://stock.hostmonit.com/CloudFlareYes",
-
 ]
 
 # 定义延迟数据的正则表达式
@@ -38,69 +36,29 @@ def process_site_data(url):
     print(f"Processing URL: {url}")
     soup = extract_table_data(url)
     if not soup:
+        print(f"No data found for {url}")
         return []
 
     data = []
     try:
-        if "cf.090227.xyz" in url:
-            rows = soup.find_all('tr')
-            print(f"Found {len(rows)} rows in cf.090227.xyz")
-            for row in rows:
-                columns = row.find_all('td')
-                if len(columns) >= 3:
-                    ip_address = columns[1].text.strip()
-                    latency_text = columns[2].text.strip()
-                    latency_match = latency_pattern.match(latency_text)
-                    if latency_match and float(latency_match.group(1)) < 100:
-                        data.append(ip_address)
+        # 查看页面的 HTML 结构并打印前 500 字符来调试
+        print(f"Page content preview: {soup.prettify()[:500]}")
 
-        elif "stock.hostmonit.com" in url:
+        # 针对 stock.hostmonit.com 网站
+        if "stock.hostmonit.com" in url:
             rows = soup.find_all('tr', class_=re.compile(r'el-table__row'))
             print(f"Found {len(rows)} rows in stock.hostmonit.com")
             for row in rows:
                 columns = row.find_all('td')
+                print(f"Row data: {[column.text.strip() for column in columns]}")  # 打印每一行的列数据
                 if len(columns) >= 3:
                     ip_address = columns[1].text.strip()
                     latency_text = columns[2].text.strip()
+                    print(f"IP Address: {ip_address}, Latency: {latency_text}")  # 打印 IP 地址和延迟
                     latency_match = latency_pattern.match(latency_text)
                     if latency_match and float(latency_match.group(1)) < 100:
                         data.append(ip_address)
 
-        elif "ip.164746.xyz" in url:
-            rows = soup.find_all('tr')
-            print(f"Found {len(rows)} rows in ip.164746.xyz")
-            for row in rows:
-                columns = row.find_all('td')
-                if len(columns) >= 5:
-                    ip_address = columns[0].text.strip()
-                    latency_text = columns[4].text.strip()
-                    latency_match = latency_pattern.match(latency_text)
-                    if latency_match and float(latency_match.group(1)) < 100:
-                        data.append(ip_address)
-
-        elif "monitor.gacjie.cn" in url:
-            rows = soup.find_all('tr')
-            print(f"Found {len(rows)} rows in monitor.gacjie.cn")
-            for row in rows:
-                tds = row.find_all('td')
-                if len(tds) >= 5:
-                    ip_address = tds[1].text.strip()
-                    latency_text = tds[4].text.strip()
-                    latency_match = latency_pattern.match(latency_text)
-                    if latency_match and float(latency_match.group(1)) < 100:
-                        data.append(ip_address)
-
-        elif "345673.xyz" in url:
-            rows = soup.find_all('tr', class_=re.compile(r'line-cm|line-ct|line-cu'))
-            print(f"Found {len(rows)} rows in 345673.xyz")
-            for row in rows:
-                tds = row.find_all('td')
-                if len(tds) >= 4:
-                    ip_address = tds[1].text.strip()
-                    latency_text = tds[3].text.strip()
-                    latency_match = latency_pattern.match(latency_text)
-                    if latency_match and float(latency_match.group(1)) < 100:
-                        data.append(ip_address)
     except Exception as e:
         print(f"Error processing {url}: {e}")
 
