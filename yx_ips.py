@@ -1,7 +1,6 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-import re
 
 # 定义请求头
 headers = {
@@ -14,9 +13,6 @@ headers = {
 urls = [
     "https://stock.hostmonit.com/CloudFlareYes",
 ]
-
-# 定义延迟数据的正则表达式
-latency_pattern = re.compile(r'(\d+(\.\d+)?)\s*(ms|毫秒|milliseconds|秒)?')
 
 # 提取表格数据的函数
 def extract_table_data(url):
@@ -55,12 +51,8 @@ def process_site_data(url):
                 columns = row.find_all('td')
                 print(f"Row data: {[column.text.strip() for column in columns]}")  # 打印每行的列数据
                 if len(columns) >= 3:
-                    ip_address = columns[1].text.strip()
-                    latency_text = columns[2].text.strip()
-                    print(f"IP Address: {ip_address}, Latency: {latency_text}")  # 打印 IP 地址和延迟
-                    latency_match = latency_pattern.match(latency_text)
-                    if latency_match and float(latency_match.group(1)) < 100:
-                        data.append(ip_address)
+                    ip_address = columns[1].text.strip()  # 只提取 IP 地址
+                    data.append(ip_address)
 
     except Exception as e:
         print(f"Error processing {url}: {e}")
