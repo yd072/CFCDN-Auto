@@ -26,9 +26,28 @@ fi
 echo "======================运行 CloudflareSpeedTest ========================="
 "${CFST_DIR}/CloudflareST" -tp 443 -f "${CFST_DIR}/ip.txt" -n 500 -dn 5 -tl 200 -tll 10 -o "${CFST_DIR}/ip.csv" -url "$URL" || { echo "测速失败！"; exit 1; }
 
+# 国家简称映射
+declare -A country_map
+country_map["China"]="CN"
+country_map["United States"]="US"
+country_map["United Kingdom"]="GB"
+country_map["Germany"]="DE"
+country_map["France"]="FR"
+country_map["India"]="IN"
+country_map["Russia"]="RU"
+country_map["Australia"]="AU"
+# 继续添加其他国家的映射...
+
 # 筛选下载速度高于 10mb/s 的 IP地址并添加国家简称
 echo "==================筛选下载速度高于 10mb/s 的IP地址并添加国家简称===================="
-awk -F, 'NR>1 && $6 > 10 && !seen[$1]++ {print $1 "#" $3}' "${CFST_DIR}/ip.csv" > "${CFST_DIR}/gfip.txt" || { echo "筛选 IP 失败！"; exit 1; }
+awk -F, 'NR>1 && $6 > 10 && !seen[$1]++ { 
+    country = $2; 
+    if (country_map[country]) {
+        print $1 "#" country_map[country]
+    } else {
+        print $1 "#" country 
+    }
+}' "${CFST_DIR}/ip.csv" > "${CFST_DIR}/gfip.txt" || { echo "筛选 IP 失败！"; exit 1; }
 
 echo "===============================脚本执行完成==============================="
 echo "筛选结果已保存到 ${CFST_DIR}/gfip.txt"
