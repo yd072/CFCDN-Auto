@@ -1,4 +1,3 @@
-import os
 import requests
 from bs4 import BeautifulSoup
 
@@ -20,6 +19,8 @@ def extract_table_data(url):
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
             print(f"Successfully fetched data from {url}")  # 调试输出
+            # 打印页面的前500个字符
+            print(f"Page content preview:\n{response.text[:500]}")  # 打印前500个字符
             soup = BeautifulSoup(response.content, 'html.parser')
             return soup
         else:
@@ -38,18 +39,12 @@ def process_site_data(url):
 
     data = []
     try:
-        # 打印 HTML 内容的前 500 个字符，检查页面结构
-        print(f"Page content preview:\n{soup.prettify()[:500]}")
-
         # 针对 stock.hostmonit.com 网站
         if "stock.hostmonit.com" in url:
             rows = soup.find_all('tr', class_=re.compile(r'el-table__row'))
             print(f"Found {len(rows)} rows in stock.hostmonit.com")  # 打印找到的行数
-            if not rows:
-                print("No rows found. Check page structure.")
             for row in rows:
                 columns = row.find_all('td')
-                print(f"Row data: {[column.text.strip() for column in columns]}")  # 打印每行的列数据
                 if len(columns) >= 3:
                     ip_address = columns[1].text.strip()  # 只提取 IP 地址
                     data.append(ip_address)
