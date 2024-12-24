@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import re
 
 # 定义请求头
 headers = {
@@ -13,13 +14,15 @@ urls = [
     "https://stock.hostmonit.com/CloudFlareYes",
 ]
 
+# 定义延迟数据的正则表达式
+latency_pattern = re.compile(r'(\d+(\.\d+)?)\s*(ms|毫秒|milliseconds|秒)?')
+
 # 提取表格数据的函数
 def extract_table_data(url):
     try:
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
             print(f"Successfully fetched data from {url}")  # 调试输出
-            # 打印页面的前500个字符
             print(f"Page content preview:\n{response.text[:500]}")  # 打印前500个字符
             soup = BeautifulSoup(response.content, 'html.parser')
             return soup
@@ -47,6 +50,7 @@ def process_site_data(url):
                 columns = row.find_all('td')
                 if len(columns) >= 3:
                     ip_address = columns[1].text.strip()  # 只提取 IP 地址
+                    print(f"Extracted IP: {ip_address}")  # 打印提取的 IP 地址
                     data.append(ip_address)
 
     except Exception as e:
