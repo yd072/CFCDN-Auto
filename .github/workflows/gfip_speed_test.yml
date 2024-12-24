@@ -19,6 +19,9 @@ jobs:
     - name: Show git remote
       run: git remote -v  # 查看远程仓库 URL
 
+    - name: Show git log
+      run: git log --oneline -n 10  # 查看最近的 10 个提交
+
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
