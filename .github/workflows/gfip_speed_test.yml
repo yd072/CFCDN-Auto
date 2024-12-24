@@ -16,6 +16,9 @@ jobs:
     - name: Show git status
       run: git status  # 查看当前 git 状态
 
+    - name: Show git remote
+      run: git remote -v  # 查看远程仓库 URL
+
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
@@ -34,10 +37,14 @@ jobs:
         chmod +x GFIP-cesu.sh
         ./GFIP-cesu.sh
 
+    - name: Pull latest changes from remote
+      run: git pull origin main --rebase  # 根据你的实际分支调整
+
     - name: Commit and push results
       run: |
-       git config --global user.email "actions@github.com"
-        git config --global user.name "GitHub Actions"
+        set -x  # 启用调试模式
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
         git add gf-ip.txt
         git commit -m "Add Gf fdIPs with speed > 9mb/s" || echo "No changes to commit"
         git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
