@@ -23,6 +23,7 @@ def extract_table_data(url):
     try:
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
+            print(f"Successfully fetched data from {url}")  # 调试输出
             soup = BeautifulSoup(response.content, 'html.parser')
             return soup
         else:
@@ -41,16 +42,18 @@ def process_site_data(url):
 
     data = []
     try:
-        # 查看页面的 HTML 结构并打印前 500 字符来调试
-        print(f"Page content preview: {soup.prettify()[:500]}")
+        # 打印 HTML 内容的前 500 个字符，检查页面结构
+        print(f"Page content preview:\n{soup.prettify()[:500]}")
 
         # 针对 stock.hostmonit.com 网站
         if "stock.hostmonit.com" in url:
             rows = soup.find_all('tr', class_=re.compile(r'el-table__row'))
-            print(f"Found {len(rows)} rows in stock.hostmonit.com")
+            print(f"Found {len(rows)} rows in stock.hostmonit.com")  # 打印找到的行数
+            if not rows:
+                print("No rows found. Check page structure.")
             for row in rows:
                 columns = row.find_all('td')
-                print(f"Row data: {[column.text.strip() for column in columns]}")  # 打印每一行的列数据
+                print(f"Row data: {[column.text.strip() for column in columns]}")  # 打印每行的列数据
                 if len(columns) >= 3:
                     ip_address = columns[1].text.strip()
                     latency_text = columns[2].text.strip()
