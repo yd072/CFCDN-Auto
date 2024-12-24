@@ -26,10 +26,12 @@ fi
 echo "======================运行 CloudflareSpeedTest ========================="
 "${CFST_DIR}/CloudflareST" -tp 443 -f "${CFST_DIR}/ip.txt" -n 500 -dn 5 -tl 200 -tll 10 -o "${CFST_DIR}/ip.csv" -url "$URL" || { echo "测速失败！"; exit 1; }
 
-# 确定国家简称的列号
+# 检查并提取国家字段的列号
 echo "===================检测国家简称的列号====================="
 header=$(head -1 "${CFST_DIR}/ip.csv")
 IFS=',' read -r -a columns <<< "$header"
+
+# 寻找"国家"字段所在列
 country_index=-1
 for i in "${!columns[@]}"; do
     if [[ "${columns[$i]}" == "国家" ]]; then
@@ -44,12 +46,16 @@ if [[ $country_index -eq -1 ]]; then
 fi
 echo "国家字段位于第 ${country_index} 列"
 
-# 筛选下载速度高于 10mb/s 的 IP 地址并添加国家简称
+# 筛选下载速度高于 10mb/s 的 IP 地址并附加国家简称
 echo "==================筛选下载速度高于 10mb/s 的IP地址并添加国家简称===================="
-awk -F, -v country_idx="$country_index" 'NR>1 && $6 > 10 && !seen[$1]++ {print $1 "#" $country_idx}' \
-    "${CFST_DIR}/ip.csv" > "${CFST_DIR}/gfip.txt" || { echo "筛选 IP 失败！"; exit 1; }
+awk -F, -v country_idx="$country_index" '
+NR > 1 && $6 > 10 && !seen[$1]++ {
+    country = $country_idx
+    if (country == "" || country ~ /^[0-9]+$/) country = "未知"  # 如果国家为空或为数字，则标记为"未知"
+    print $1 "#" country
+}' "${CFST_DIR}/ip.csv" > "${CFST_DIR}/gfip.txt" || { echo "筛选 IP 失败！"; exit 1; }
 
-# 检查结果
+# 输出结果
 echo "===============================脚本执行完成==============================="
 if [[ -s "${CFST_DIR}/gfip.txt" ]]; then
     echo "筛选结果已保存到 ${CFST_DIR}/gfip.txt"
