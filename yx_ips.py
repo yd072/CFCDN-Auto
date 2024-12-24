@@ -10,15 +10,26 @@ headers = {
 
 # 定义五个网址
 urls = [
-    "https://cf.090227.xyz/",
+   
     "https://stock.hostmonit.com/CloudFlareYes",
-    "https://ip.164746.xyz/",
-    "https://monitor.gacjie.cn/page/cloudflare/ipv4.html",
-    "https://345673.xyz/"
+
 ]
 
 # 解析延迟数据的正则表达式
 latency_pattern = re.compile(r'(\d+(\.\d+)?)\s*(ms|毫秒)?')
+
+# 获取IP地址的国家代码
+def get_country_code(ip_address):
+    try:
+        # 通过 ipinfo.io API 获取IP的地理位置信息
+        response = requests.get(f'http://ipinfo.io/{ip_address}/json')
+        if response.status_code == 200:
+            data = response.json()
+            return data.get('country', 'Unknown')
+        else:
+            return 'Unknown'
+    except requests.RequestException:
+        return 'Unknown'
 
 # 提取表格数据的函数
 def extract_table_data(url):
@@ -28,9 +39,9 @@ def extract_table_data(url):
             soup = BeautifulSoup(response.content, 'html.parser')
             return soup
         else:
-            print(f"Failed to fetch data from {url}. Status code: {response.status_code}")
+            print(f"无法从 {url} 获取数据。状态码: {response.status_code}")
     except requests.RequestException as e:
-        print(f"Request failed for {url}: {e}")
+        print(f"请求失败: {url} - {e}")
     return None
 
 # 处理每个网址的数据
@@ -49,7 +60,8 @@ def process_site_data(url):
                 latency_text = columns[2].text.strip()
                 latency_match = latency_pattern.match(latency_text)
                 if latency_match and float(latency_match.group(1)) < 100:
-                    data.append(ip_address)
+                    country = get_country_code(ip_address)
+                    data.append(f"{ip_address} #{country}")
 
     elif "stock.hostmonit.com" in url:
         rows = soup.find_all('tr', class_=re.compile(r'el-table__row'))
@@ -60,7 +72,8 @@ def process_site_data(url):
                 latency_text = columns[2].text.strip()
                 latency_match = latency_pattern.match(latency_text)
                 if latency_match and float(latency_match.group(1)) < 100:
-                    data.append(ip_address)
+                    country = get_country_code(ip_address)
+                    data.append(f"{ip_address} #{country}")
 
     elif "ip.164746.xyz" in url:
         rows = soup.find_all('tr')
@@ -71,7 +84,8 @@ def process_site_data(url):
                 latency_text = columns[4].text.strip()
                 latency_match = latency_pattern.match(latency_text)
                 if latency_match and float(latency_match.group(1)) < 100:
-                    data.append(ip_address)
+                    country = get_country_code(ip_address)
+                    data.append(f"{ip_address} #{country}")
 
     elif "monitor.gacjie.cn" in url:
         rows = soup.find_all('tr')
@@ -82,7 +96,8 @@ def process_site_data(url):
                 latency_text = tds[4].text.strip()
                 latency_match = latency_pattern.match(latency_text)
                 if latency_match and float(latency_match.group(1)) < 100:
-                    data.append(ip_address)
+                    country = get_country_code(ip_address)
+                    data.append(f"{ip_address} #{country}")
 
     elif "345673.xyz" in url:
         rows = soup.find_all('tr', class_=re.compile(r'line-cm|line-ct|line-cu'))
@@ -93,7 +108,8 @@ def process_site_data(url):
                 latency_text = tds[3].text.strip()
                 latency_match = latency_pattern.match(latency_text)
                 if latency_match and float(latency_match.group(1)) < 100:
-                    data.append(ip_address)
+                    country = get_country_code(ip_address)
+                    data.append(f"{ip_address} #{country}")
 
     return data
 
@@ -109,9 +125,9 @@ def main():
 
     # 保存到 ip.txt 文件
     with open('ip.txt', 'w', encoding='utf-8') as f:
-        for ip in unique_data:
-            f.write(ip + '\n')
-    print("Filtered IPs saved to ip.txt")
+        for entry in unique_data:
+            f.write(entry + '\n')
+    print("筛选后的IP及国家代码已保存到 ip.txt 文件")
 
 if __name__ == "__main__":
     main()
