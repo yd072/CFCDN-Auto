@@ -2,6 +2,11 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import re
+import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 
 # 定义请求头
 headers = {
@@ -10,9 +15,7 @@ headers = {
 
 # 定义五个网址
 urls = [
-   
     "https://stock.hostmonit.com/CloudFlareYes",
-
 ]
 
 # 解析延迟数据的正则表达式
@@ -21,8 +24,7 @@ latency_pattern = re.compile(r'(\d+(\.\d+)?)\s*(ms|毫秒)?')
 # 获取IP地址的国家代码
 def get_country_code(ip_address):
     try:
-        # 通过 ipinfo.io API 获取IP的地理位置信息
-        response = requests.get(f'http://ipinfo.io/{ip_address}/json')
+        response = requests.get(f'http://ipinfo.io/{ip_address}/json', timeout=10)
         if response.status_code == 200:
             data = response.json()
             return data.get('country', 'Unknown')
@@ -31,16 +33,27 @@ def get_country_code(ip_address):
     except requests.RequestException:
         return 'Unknown'
 
+# 使用 Selenium 获取动态加载的网页内容
+def extract_dynamic_content(url):
+    options = Options()
+    options.add_argument('--headless')  # 使用无头模式
+    driver = webdriver.Chrome(options=options)
+    try:
+        driver.get(url)
+        time.sleep(5)  # 等待页面加载完成
+        html_content = driver.page_source
+        return BeautifulSoup(html_content, 'html.parser')
+    finally:
+        driver.quit()
+
 # 提取表格数据的函数
 def extract_table_data(url):
     try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            return soup
-        else:
-            print(f"无法从 {url} 获取数据。状态码: {response.status_code}")
-    except requests.RequestException as e:
+        # 使用 Selenium 抓取动态网页内容
+        soup = extract_dynamic_content(url)
+        print(f"成功获取网页内容: {url}")
+        return soup
+    except Exception as e:
         print(f"请求失败: {url} - {e}")
     return None
 
@@ -51,61 +64,14 @@ def process_site_data(url):
         return []
 
     data = []
-    if "cf.090227.xyz" in url:
-        rows = soup.find_all('tr')
-        for row in rows:
-            columns = row.find_all('td')
-            if len(columns) >= 3:
-                ip_address = columns[1].text.strip()
-                latency_text = columns[2].text.strip()
-                latency_match = latency_pattern.match(latency_text)
-                if latency_match and float(latency_match.group(1)) < 100:
-                    country = get_country_code(ip_address)
-                    data.append(f"{ip_address} #{country}")
-
-    elif "stock.hostmonit.com" in url:
+    if "stock.hostmonit.com" in url:
         rows = soup.find_all('tr', class_=re.compile(r'el-table__row'))
         for row in rows:
             columns = row.find_all('td')
             if len(columns) >= 3:
                 ip_address = columns[1].text.strip()
                 latency_text = columns[2].text.strip()
-                latency_match = latency_pattern.match(latency_text)
-                if latency_match and float(latency_match.group(1)) < 100:
-                    country = get_country_code(ip_address)
-                    data.append(f"{ip_address} #{country}")
-
-    elif "ip.164746.xyz" in url:
-        rows = soup.find_all('tr')
-        for row in rows:
-            columns = row.find_all('td')
-            if len(columns) >= 5:
-                ip_address = columns[0].text.strip()
-                latency_text = columns[4].text.strip()
-                latency_match = latency_pattern.match(latency_text)
-                if latency_match and float(latency_match.group(1)) < 100:
-                    country = get_country_code(ip_address)
-                    data.append(f"{ip_address} #{country}")
-
-    elif "monitor.gacjie.cn" in url:
-        rows = soup.find_all('tr')
-        for row in rows:
-            tds = row.find_all('td')
-            if len(tds) >= 5:
-                ip_address = tds[1].text.strip()
-                latency_text = tds[4].text.strip()
-                latency_match = latency_pattern.match(latency_text)
-                if latency_match and float(latency_match.group(1)) < 100:
-                    country = get_country_code(ip_address)
-                    data.append(f"{ip_address} #{country}")
-
-    elif "345673.xyz" in url:
-        rows = soup.find_all('tr', class_=re.compile(r'line-cm|line-ct|line-cu'))
-        for row in rows:
-            tds = row.find_all('td')
-            if len(tds) >= 4:
-                ip_address = tds[1].text.strip()
-                latency_text = tds[3].text.strip()
+                print(f"提取到IP: {ip_address}, 延迟: {latency_text}")  # 调试信息
                 latency_match = latency_pattern.match(latency_text)
                 if latency_match and float(latency_match.group(1)) < 100:
                     country = get_country_code(ip_address)
@@ -117,6 +83,7 @@ def process_site_data(url):
 def main():
     all_data = []
     for url in urls:
+        print(f"正在处理网址: {url}")
         site_data = process_site_data(url)
         all_data.extend(site_data)
 
