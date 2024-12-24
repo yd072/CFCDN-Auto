@@ -4,21 +4,23 @@ from bs4 import BeautifulSoup
 import re
 import time
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # 定义请求头
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 }
 
-# 定义五个网址
+# 定义目标网址
 urls = [
     "https://stock.hostmonit.com/CloudFlareYes",
 ]
 
-# 解析延迟数据的正则表达式
+# 正则表达式解析延迟数据
 latency_pattern = re.compile(r'(\d+(\.\d+)?)\s*(ms|毫秒)?')
 
 # 获取IP地址的国家代码
@@ -33,37 +35,47 @@ def get_country_code(ip_address):
     except requests.RequestException:
         return 'Unknown'
 
-# 使用 Selenium 获取动态加载的网页内容
+# 使用 Selenium 动态加载网页内容
 def extract_dynamic_content(url):
+    # 配置 Selenium 的 Chrome 驱动
     options = Options()
-    options.add_argument('--headless')  # 使用无头模式
-    driver = webdriver.Chrome(options=options)
+    options.add_argument('--headless')  # 无头模式
+    options.add_argument('--disable-gpu')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    
+    service = Service('/path/to/chromedriver')  # 替换为 chromedriver 的路径
+    driver = webdriver.Chrome(service=service, options=options)
+    
     try:
         driver.get(url)
-        time.sleep(5)  # 等待页面加载完成
+        # 等待表格加载完成
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, 'el-table__row'))
+        )
         html_content = driver.page_source
         return BeautifulSoup(html_content, 'html.parser')
     finally:
         driver.quit()
 
-# 提取表格数据的函数
+# 提取表格数据
 def extract_table_data(url):
     try:
-        # 使用 Selenium 抓取动态网页内容
         soup = extract_dynamic_content(url)
-        print(f"成功获取网页内容: {url}")
+        print(f"成功加载网页内容: {url}")
         return soup
     except Exception as e:
-        print(f"请求失败: {url} - {e}")
+        print(f"无法加载网页内容: {url} - 错误: {e}")
     return None
 
-# 处理每个网址的数据
+# 处理目标网站数据
 def process_site_data(url):
     soup = extract_table_data(url)
     if not soup:
         return []
 
     data = []
+    # 处理 CloudFlareYes 的表格数据
     if "stock.hostmonit.com" in url:
         rows = soup.find_all('tr', class_=re.compile(r'el-table__row'))
         for row in rows:
@@ -87,7 +99,7 @@ def main():
         site_data = process_site_data(url)
         all_data.extend(site_data)
 
-    # 去除重复的IP地址
+    # 去重处理
     unique_data = list(set(all_data))
 
     # 保存到 ip.txt 文件
