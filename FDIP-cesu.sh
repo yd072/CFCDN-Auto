@@ -26,8 +26,12 @@ fi
 echo "======================运行 CloudflareSpeedTest ========================="
 "${CFST_DIR}/CloudflareST" -tp 443 -f "${CFST_DIR}/ip.txt" -n 500 -dn 5 -tl 200 -tll 10 -o "${CFST_DIR}/ip.csv" -url "$URL" || { echo "测速失败！"; exit 1; }
 
+# 打印文件的前几行以检查数据格式
+echo "===================打印ip.csv文件的前几行====================="
+head -n 5 "${CFST_DIR}/ip.csv"
+
 # 检查并提取国家字段的列号
-echo "===================检测国家简称的列号====================="
+echo "===================检测国家字段列号====================="
 header=$(head -1 "${CFST_DIR}/ip.csv")
 IFS=',' read -r -a columns <<< "$header"
 
