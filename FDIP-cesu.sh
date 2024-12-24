@@ -5,16 +5,14 @@ export LANG=zh_CN.UTF-8
 
 # 配置目录
 BASE_DIR=$(pwd)
-FDIP_DIR="${BASE_DIR}/FDIP"
 CFST_DIR="${BASE_DIR}/CloudflareST"
 URL="https://spurl.api.030101.xyz/50mb"
-SAVE_PATH="${FDIP_DIR}/txt.zip"
 
 # 创建所需目录
 mkdir -p "${FDIP_DIR}"
 mkdir -p "${CFST_DIR}"
 
-# 6. 下载 CloudflareST_linux_amd64.tar.gz 文件到 CloudflareST 文件夹
+#  下载 CloudflareST_linux_amd64.tar.gz 文件到 CloudflareST 文件夹
 echo "=========================下载和解压CloudflareST=========================="
 if [ ! -f "${CFST_DIR}/CloudflareST" ]; then
     echo "CloudflareST文件不存在，开始下载..."
