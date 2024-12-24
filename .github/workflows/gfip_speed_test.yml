@@ -13,15 +13,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Show git status
-      run: git status  # 查看当前 git 状态
-
-    - name: Show remote URL
-      run: git remote -v  # 查看远程仓库 URL
-
-    - name: Show git config
-      run: git config --list  # 查看 git 配置
-
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
@@ -40,14 +31,10 @@ jobs:
         chmod +x GFIP-cesu.sh
         ./GFIP-cesu.sh
 
-    - name: Pull latest changes from remote
-      run: git pull origin main --rebase  # 根据你的实际分支调整
-
     - name: Commit and push results
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git add gf-ip.txt
-        git commit -m "Add Gf fdIPs with speed > 9mb/s" || echo "No changes to commit"
-        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-        git push origin main  # 确保推送到正确的分支
+        git add CloudflareST/gf-ip.txt 
+        git commit -m "Add Gf fdIPs with speed > 9mb/s"
+        git push
