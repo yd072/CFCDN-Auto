@@ -46,7 +46,14 @@ echo "国家字段位于第 ${country_index} 列"
 
 # 筛选下载速度高于 10mb/s 的 IP 地址并添加国家简称
 echo "==================筛选下载速度高于 10mb/s 的IP地址并添加国家简称===================="
-awk -F, -v country_idx="$country_index" 'NR>1 && $6 > 10 && !seen[$1]++ {print $1 "#" $country_idx}' "${CFST_DIR}/ip.csv" > "${CFST_DIR}/gfip.txt" || { echo "筛选 IP 失败！"; exit 1; }
+awk -F, -v country_idx="$country_index" 'NR>1 && $6 > 10 && !seen[$1]++ {print $1 "#" $country_idx}' \
+    "${CFST_DIR}/ip.csv" > "${CFST_DIR}/gfip.txt" || { echo "筛选 IP 失败！"; exit 1; }
 
+# 检查结果
 echo "===============================脚本执行完成==============================="
-echo "筛选结果已保存到 ${CFST_DIR}/gfip.txt"
+if [[ -s "${CFST_DIR}/gfip.txt" ]]; then
+    echo "筛选结果已保存到 ${CFST_DIR}/gfip.txt"
+    cat "${CFST_DIR}/gfip.txt"
+else
+    echo "未筛选到符合条件的 IP！"
+fi
