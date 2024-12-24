@@ -35,6 +35,6 @@ jobs:
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git add gf-ip.txt 
+        git add CloudflareST gf-ip.txt 
         git commit -m "Add Gf fdIPs with speed > 9mb/s"
         git push
