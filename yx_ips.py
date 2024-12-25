@@ -55,20 +55,15 @@ def is_valid_ip(ip):
     return re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', ip)
 
 def get_ip_country(ip):
-    """根据 IP 获取国家简称，使用 ip-api.com API"""
+    """根据 IP 获取国家简称，使用 ipinfo.io API"""
     try:
-        # 使用 ip-api.com API 获取国家信息
+        # 使用 ipinfo.io API 获取国家信息
         print(f"查询 IP: {ip}")
-        response = requests.get(f'http://ip-api.com/json/{ip}?fields=country', timeout=10)
+        response = requests.get(f'http://ipinfo.io/{ip}/json', timeout=10)
         response.raise_for_status()
         data = response.json()
 
         # 如果查询成功，返回国家信息
-        if data.get('status') == 'fail':
-            print(f"查询失败: {ip}")
-            return 'Unknown'
-        
-        # 返回国家信息（如果没有则返回 'Unknown'）
         country = data.get('country', 'Unknown')
         print(f"查询成功: {ip} -> 国家: {country}")
         return country
