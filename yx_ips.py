@@ -34,21 +34,21 @@ def fetch_ips():
         except Exception as e:
             print(f"抓取 {url} 时发生错误: {e}")
 
-    # 获取 IP 对应的国家简称
-    ip_with_country = {}
+    # 获取 IP 对应的地区简称
+    ip_with_region = {}
     for ip in new_ips:
-        country = get_ip_country(ip)
-        ip_with_country[ip] = country
-        print(f"IP: {ip} -> 国家: {country}")
+        region = get_ip_region(ip)
+        ip_with_region[ip] = region
+        print(f"IP: {ip} -> 地区: {region}")
 
     # 将新的 IP 地址去重并写入文件
-    all_ips = existing_ips.union(ip_with_country.keys())  # 合并已存在的和新的 IP 地址
+    all_ips = existing_ips.union(ip_with_region.keys())  # 合并已存在的和新的 IP 地址
     print(f"合并后的所有 IP 地址（去重后）：{all_ips}")
 
     with open('ip.txt', 'w') as file:
         for ip in sorted(all_ips):  # 按字母顺序排序
-            # 输出格式：IP#国家简称（没有空格）
-            file.write(f"{ip}#{ip_with_country.get(ip, 'Unknown')}\n")
+            # 输出格式：IP#地区简称（没有空格）
+            file.write(f"{ip}#{ip_with_region.get(ip, 'Unknown')}\n")
 
     print(f"新 IP 已保存到 ip.txt，总计新增 {len(new_ips)} 个 IP 地址")
 
@@ -56,22 +56,9 @@ def is_valid_ip(ip):
     """简单验证 IPv4 地址的正则"""
     return re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', ip)
 
-def is_cloudflare_ip(ip):
-    """检查 IP 是否属于 Cloudflare"""
-    cloudflare_ips = [
-        '104.16.0.0', '104.17.0.0', '104.18.0.0', '104.19.0.0',
-        '104.20.0.0', '104.21.0.0', '104.22.0.0', '104.23.0.0', 
-        '104.24.0.0', '104.25.0.0'
-    ]
-    return ip.startswith(tuple(cloudflare_ips))
-
-def get_ip_country(ip):
-    """根据 IP 获取国家简称，使用多个 API 以增加准确性"""
+def get_ip_region(ip):
+    """根据 IP 获取地区简称，使用多个 API 以增加准确性"""
     print(f"查询 IP: {ip}...")
-
-    # 如果是 Cloudflare IP，则标记为 CDN
-    if is_cloudflare_ip(ip):
-        return 'CDN'
 
     apis = [
         f'http://ipinfo.io/{ip}/json',
@@ -87,13 +74,13 @@ def get_ip_country(ip):
                 response.raise_for_status()
                 data = response.json()
 
-                # 获取国家信息
-                country = data.get('country', 'Unknown')
-                if country != 'Unknown':
-                    print(f"查询成功: {ip} -> 国家: {country}")
-                    return country
+                # 获取地区信息
+                region = data.get('country', 'Unknown')
+                if region != 'Unknown':
+                    print(f"查询成功: {ip} -> 地区: {region}")
+                    return region
                 else:
-                    print(f"API {api} 返回无效国家信息")
+                    print(f"API {api} 返回无效地区信息")
                     break  # 如果返回 'Unknown'，跳出重试循环
             except requests.RequestException as e:
                 print(f"查询 {ip} 时发生错误，尝试第 {attempt+1} 次重试：{e}")
