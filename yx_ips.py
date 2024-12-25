@@ -80,6 +80,7 @@ def get_ip_country(ip):
         f'http://ipinfo.io/{ip}/json',
         f'http://ip-api.com/json/{ip}',
         f'https://geolocation-db.com/json/{ip}&position=true',
+        f'https://ip-api.io/{ip}/json',  # 额外添加一个 API
     ]
     
     for api in apis:
