@@ -56,34 +56,33 @@ def is_valid_ip(ip):
 
 def get_ip_country(ip):
     """根据 IP 获取国家简称，使用多个 API 以增加准确性"""
-    try:
-        # 使用 ipinfo.io API 获取国家信息
-        print(f"查询 IP: {ip}...")
-        response = requests.get(f'http://ipinfo.io/{ip}/json', timeout=10)
-        response.raise_for_status()
-        data = response.json()
-
-        # 如果查询成功，返回国家信息
-        country = data.get('country', 'Unknown')
-        print(f"查询成功: {ip} -> 国家: {country}")
-        return country
-    except requests.RequestException as e:
-        print(f"查询 {ip} 时发生错误，尝试备用 API：{e}")
+    print(f"查询 IP: {ip}...")
     
-    # 如果第一个 API 请求失败，使用备用 API
-    try:
-        print(f"尝试备用 API 查询 IP: {ip}...")
-        response = requests.get(f'http://ip-api.com/json/{ip}', timeout=10)
-        response.raise_for_status()
-        data = response.json()
+    # 尝试多个 API 查询，增加准确性和成功率
+    apis = [
+        f'http://ipinfo.io/{ip}/json',
+        f'http://ip-api.com/json/{ip}',
+        f'https://geolocation-db.com/json/{ip}&position=true',
+    ]
+    
+    for api in apis:
+        try:
+            response = requests.get(api, timeout=10)
+            response.raise_for_status()
+            data = response.json()
 
-        # 如果查询成功，返回国家信息
-        country = data.get('country', 'Unknown')
-        print(f"备用查询成功: {ip} -> 国家: {country}")
-        return country
-    except requests.RequestException as e:
-        print(f"备用 API 查询失败: {e}")
-        return 'Unknown'
+            # 获取国家信息
+            country = data.get('country', 'Unknown')
+            if country != 'Unknown':
+                print(f"查询成功: {ip} -> 国家: {country}")
+                return country
+            else:
+                print(f"API {api} 返回无效国家信息")
+        except requests.RequestException as e:
+            print(f"查询 {ip} 时发生错误，尝试下一个 API：{e}")
+            continue
+
+    return 'Unknown'  # 如果所有 API 都失败，返回 Unknown
 
 if __name__ == '__main__':
     fetch_ips()
