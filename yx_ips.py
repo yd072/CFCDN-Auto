@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import re
+import time
 
 def fetch_ips():
     target_urls = [
@@ -54,15 +55,21 @@ def is_valid_ip(ip):
     return re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', ip)
 
 def get_ip_country(ip):
-    """根据 IP 获取国家简称"""
+    """根据 IP 获取国家简称，使用 ip-api.com API"""
     try:
-        # 使用 ipinfo.io API 获取国家信息
-        response = requests.get(f'http://ipinfo.io/{ip}/json', timeout=10)
+        # 使用 ip-api.com API 获取国家信息
+        response = requests.get(f'http://ip-api.com/json/{ip}?fields=country', timeout=10)
         response.raise_for_status()
         data = response.json()
+        
+        # 如果查询成功，返回国家信息
+        if data.get('status') == 'fail':
+            return 'Unknown'
+        
         # 返回国家信息（如果没有则返回 'Unknown'）
         return data.get('country', 'Unknown')
     except requests.RequestException:
+        # 在请求失败的情况下，返回 'Unknown'
         return 'Unknown'
 
 if __name__ == '__main__':
