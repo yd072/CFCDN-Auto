@@ -11,19 +11,18 @@ def get_ip_country(ip):
         ipwhois = IPWhois(ip)
         result = ipwhois.lookup_rdap()
         country = result.get('country', 'Unknown')  # 如果没有找到国家代码，则返回 'Unknown'
-        if country != 'Unknown':
+        if country and country != 'ZZ':  # 防止无效国家代码
             return country
     except Exception as e:
         print(f"ipwhois 查询失败: {e}")
     
-    # 使用 ip-api 查询
+    # 使用 ip-api 查询作为备用
     try:
         response = requests.get(f'http://ip-api.com/json/{ip}?fields=countryCode', timeout=10)
         response.raise_for_status()
         data = response.json()
-        if data.get('status') == 'fail':
-            return 'Unknown'
-        return data.get('countryCode', 'Unknown')
+        if data.get('status') == 'success':
+            return data.get('countryCode', 'Unknown')
     except requests.RequestException as e:
         print(f"ip-api 查询失败: {e}")
     
