@@ -34,9 +34,6 @@ def fetch_ips():
         except Exception as e:
             print(f"抓取 {url} 时发生错误: {e}")
 
-    # 打印抓取到的所有 IP 地址
-    print(f"抓取到的所有 IP 地址：{new_ips}")
-
     # 获取 IP 对应的国家简称
     ip_with_country = {}
     for ip in new_ips:
