@@ -58,18 +58,23 @@ def get_ip_country(ip):
     """根据 IP 获取国家简称，使用 ip-api.com API"""
     try:
         # 使用 ip-api.com API 获取国家信息
+        print(f"查询 IP: {ip}")
         response = requests.get(f'http://ip-api.com/json/{ip}?fields=country', timeout=10)
         response.raise_for_status()
         data = response.json()
-        
+
         # 如果查询成功，返回国家信息
         if data.get('status') == 'fail':
+            print(f"查询失败: {ip}")
             return 'Unknown'
         
         # 返回国家信息（如果没有则返回 'Unknown'）
-        return data.get('country', 'Unknown')
-    except requests.RequestException:
+        country = data.get('country', 'Unknown')
+        print(f"查询成功: {ip} -> 国家: {country}")
+        return country
+    except requests.RequestException as e:
         # 在请求失败的情况下，返回 'Unknown'
+        print(f"查询 IP 时发生错误: {ip} 错误: {e}")
         return 'Unknown'
 
 if __name__ == '__main__':
