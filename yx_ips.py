@@ -1,90 +1,47 @@
-import asyncio
-import logging
-import re
-from pyppeteer import launch
+import requests
+from bs4 import BeautifulSoup
+import os
 
-# 设置日志格式
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-class StealthReader:
-    def __init__(self, target_url):
-        self.target_url = target_url
-        self.browser = None
-        self.page = None
-
-    async def __aenter__(self):
-        await self.init_browser()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if self.browser:
-            await self.browser.close()
-
-    async def init_browser(self):
-        logging.info(f"初始化浏览器... 目标网站: {self.target_url}")
-        self.browser = await launch({
-            'headless': True,
-            'args': [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-infobars',
-                '--disable-blink-features=AutomationControlled',
-                '--disable-gpu',
-                '--disable-dev-shm-usage',
-            ],
-            'ignoreHTTPSErrors': True,
-            'defaultViewport': None
-        })
-        self.page = await self.browser.newPage()
-
-    async def scrape(self):
-        """抓取 IP 信息并保存到文件"""
-        logging.info(f"开始访问目标网页: {self.target_url}")
-        try:
-            await self.page.goto(self.target_url, {'waitUntil': 'domcontentloaded'})
-
-            # 等待页面加载完成
-            await asyncio.sleep(2)
-
-            logging.info(f"开始提取目标网站的 IP 信息: {self.target_url}")
-            # 提取整个页面的 HTML
-            page_content = await self.page.content()
-
-            # 使用正则表达式匹配 IP 地址
-            ip_match = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', page_content)
-            if ip_match:
-                logging.info(f"找到的 IP 地址: {ip_match}")
-
-                # 将 IP 保存到文件
-                with open("ip.txt", "a") as file:
-                    for ip_address in ip_match:
-                        file.write(f"{self.target_url} - {ip_address}\n")
-                logging.info(f"目标网站的 IP 地址已保存到 ip.txt 文件")
-            else:
-                logging.info(f"未找到符合格式的 IP 地址: {self.target_url}")
-        except Exception as e:
-            logging.error(f"提取 IP 地址时出错: {e}")
-
-    async def run(self):
-        """主程序入口"""
-        await self.scrape()
-
-async def main():
-    # 定义多个目标网站
+def fetch_ips():
     target_urls = [
         'https://stock.hostmonit.com/CloudFlareYes',
-        'https://example.com',
-        'https://another-example.com'
+        'https://example.com',  # 添加更多目标 URL
     ]
 
-    # 遍历所有目标网站
-    for url in target_urls:
-        async with StealthReader(url) as reader:
-            await reader.run()
+    existing_ips = set()
+    if os.path.exists('ip.txt'):
+        with open('ip.txt', 'r') as file:
+            existing_ips = set(line.strip() for line in file)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+    new_ips = set()
+
+    for url in target_urls:
+        print(f"正在抓取 {url} 的 IP 地址...")
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # 提取 IP 地址（根据具体网站修改选择器）
+            ips = set(soup.find_all(text=lambda text: text and is_valid_ip(text)))
+
+            for ip in ips:
+                new_ips.add(ip.strip())
+            print(f"成功从 {url} 抓取到 {len(ips)} 个 IP 地址")
+        except Exception as e:
+            print(f"抓取 {url} 时发生错误: {e}")
+
+    # 新增 IP 保存到文件
+    with open('ip.txt', 'a') as file:
+        for ip in new_ips - existing_ips:
+            file.write(ip + '\n')
+
+    print(f"新 IP 已保存到 ip.txt，总计新增 {len(new_ips - existing_ips)} 个 IP 地址")
+
+def is_valid_ip(ip):
+    """简单验证 IPv4 地址的正则"""
+    import re
+    return re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', ip)
+
+if __name__ == '__main__':
+    fetch_ips()
