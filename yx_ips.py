@@ -5,7 +5,7 @@ import os
 def fetch_ips():
     target_urls = [
         'https://stock.hostmonit.com/CloudFlareYes',
-        'https://example.com',  # 添加更多目标 URL
+        'https://cf.090227.xyz',  # 添加更多目标 URL
     ]
 
     existing_ips = set()
