@@ -6,16 +6,16 @@ from bs4 import BeautifulSoup
 
 def get_ip_country(ip):
     """根据 IP 获取国家代码"""
-    # 使用 ipwhois 查询
+    # 优先使用 ipwhois 查询
     try:
         ipwhois = IPWhois(ip)
         result = ipwhois.lookup_rdap()
-        country = result.get('country', 'Unknown')  # 如果没有找到国家代码，则返回 'Unknown'
+        country = result.get('asn_country_code', 'Unknown')
         if country and country != 'ZZ':  # 防止无效国家代码
             return country
     except Exception as e:
         print(f"ipwhois 查询失败: {e}")
-    
+
     # 使用 ip-api 查询作为备用
     try:
         response = requests.get(f'http://ip-api.com/json/{ip}?fields=countryCode', timeout=10)
@@ -25,13 +25,14 @@ def get_ip_country(ip):
             return data.get('countryCode', 'Unknown')
     except requests.RequestException as e:
         print(f"ip-api 查询失败: {e}")
-    
+
+    # 返回 Unknown 作为默认值
     return 'Unknown'
 
 def fetch_ips():
     target_urls = [
         'https://stock.hostmonit.com/CloudFlareYes',
-        'https://cf.090227.xyz',  # 其他目标 URL
+        'https://cf.090227.xyz',  # 添加更多目标 URL
     ]
 
     # 读取已存在的 IP 地址并去重
