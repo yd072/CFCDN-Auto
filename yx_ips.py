@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import os
 import re
 import time
+from ipwhois import IPWhois
 
 def fetch_ips():
     target_urls = [
@@ -57,37 +58,25 @@ def is_valid_ip(ip):
     return re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', ip)
 
 def get_ip_region(ip):
-    """根据 IP 获取地区简称，使用多个 API 以增加准确性"""
+    """根据 IP 获取地区简称，使用 ipwhois 库"""
     print(f"查询 IP: {ip}...")
 
-    apis = [
-        f'http://ipinfo.io/{ip}/json',
-        f'http://ip-api.com/json/{ip}',
-        f'https://geolocation-db.com/json/{ip}&position=true',
-        f'https://ip-api.io/{ip}/json',  # 额外添加一个 API
-    ]
-    
-    for api in apis:
-        for attempt in range(3):  # 最大重试次数
-            try:
-                response = requests.get(api, timeout=10)
-                response.raise_for_status()
-                data = response.json()
+    try:
+        # 使用 ipwhois 库查询 IP 信息
+        ipwhois = IPWhois(ip)
+        result = ipwhois.lookup_rdap()
 
-                # 获取地区信息
-                region = data.get('country', 'Unknown')
-                if region != 'Unknown':
-                    print(f"查询成功: {ip} -> 地区: {region}")
-                    return region
-                else:
-                    print(f"API {api} 返回无效地区信息")
-                    break  # 如果返回 'Unknown'，跳出重试循环
-            except requests.RequestException as e:
-                print(f"查询 {ip} 时发生错误，尝试第 {attempt+1} 次重试：{e}")
-                time.sleep(2)  # 等待 2 秒后重试
-                continue
-
-    return 'Unknown'  # 如果所有 API 都失败，返回 Unknown
+        # 提取国家信息
+        country = result.get('country', 'Unknown')
+        if country != 'Unknown':
+            print(f"查询成功: {ip} -> 国家: {country}")
+            return country
+        else:
+            print(f"IP {ip} 未能找到国家信息")
+            return 'Unknown'
+    except Exception as e:
+        print(f"查询 {ip} 时发生错误: {e}")
+        return 'Unknown'
 
 if __name__ == '__main__':
     fetch_ips()
