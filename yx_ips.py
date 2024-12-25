@@ -2,10 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import re
-import time
 from ipwhois import IPWhois
 
 def fetch_ips():
+    # 目标网站列表
     target_urls = [
         'https://stock.hostmonit.com/CloudFlareYes',
         'https://cf.090227.xyz',  # 添加更多目标 URL
@@ -49,6 +49,7 @@ def fetch_ips():
     with open('ip.txt', 'w') as file:
         for ip in sorted(all_ips):  # 按字母顺序排序
             # 输出格式：IP#地区简称（没有空格）
+            print(f"写入 {ip} 到文件")
             file.write(f"{ip}#{ip_with_region.get(ip, 'Unknown')}\n")
 
     print(f"新 IP 已保存到 ip.txt，总计新增 {len(new_ips)} 个 IP 地址")
