@@ -4,45 +4,44 @@ import re
 import os
 from bs4 import BeautifulSoup
 
+def is_valid_ip(ip):
+    """验证是否是有效的 IPv4 地址"""
+    return re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', ip)
+
 def get_ip_country(ip):
-    """根据 IP 获取国家代码"""
-    # 优先使用 ipwhois 查询
+    """
+    使用 ipwhois 查询 IP 的国家代码
+    """
     try:
         ipwhois = IPWhois(ip)
         result = ipwhois.lookup_rdap()
         country = result.get('asn_country_code', 'Unknown')
-        if country and country != 'ZZ':  # 防止无效国家代码
-            return country
+        return country if country else 'Unknown'
     except Exception as e:
-        print(f"ipwhois 查询失败: {e}")
-
-    # 使用 ip-api 查询作为备用
-    try:
-        response = requests.get(f'http://ip-api.com/json/{ip}?fields=countryCode', timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        if data.get('status') == 'success':
-            return data.get('countryCode', 'Unknown')
-    except requests.RequestException as e:
-        print(f"ip-api 查询失败: {e}")
-
-    # 返回 Unknown 作为默认值
-    return 'Unknown'
+        print(f"查询 {ip} 的国家代码失败: {e}")
+        return 'Unknown'
 
 def fetch_ips():
+    """
+    抓取目标网站的 IP 地址并查询国家代码
+    """
     target_urls = [
         'https://stock.hostmonit.com/CloudFlareYes',
         'https://cf.090227.xyz',  # 添加更多目标 URL
     ]
 
     # 读取已存在的 IP 地址并去重
-    existing_ips = set()
+    existing_ips = {}
     if os.path.exists('ip.txt'):
         with open('ip.txt', 'r') as file:
-            existing_ips = set(line.strip().split('#')[0] for line in file)
+            for line in file:
+                parts = line.strip().split('#')
+                if len(parts) == 2:
+                    existing_ips[parts[0]] = parts[1]
 
     new_ips = set()
 
+    # 抓取 IP 地址
     for url in target_urls:
         print(f"正在抓取 {url} 的 IP 地址...")
         try:
@@ -50,34 +49,30 @@ def fetch_ips():
             response.raise_for_status()
             soup = BeautifulSoup(response.text, 'html.parser')
 
-            # 提取所有 IP 地址（根据具体网站修改选择器）
+            # 提取 IP 地址
             ips = set(soup.find_all(text=lambda text: text and is_valid_ip(text)))
-
-            # 将抓取到的 IP 加入新 IP 集合
             new_ips.update(ips)
-            print(f"成功从 {url} 抓取到 {len(ips)} 个 IP 地址")
+            print(f"从 {url} 抓取到 {len(ips)} 个 IP 地址")
         except Exception as e:
             print(f"抓取 {url} 时发生错误: {e}")
 
-    # 获取 IP 对应的国家简称
+    # 查询 IP 对应的国家代码
     ip_with_country = {}
     for ip in new_ips:
-        country = get_ip_country(ip)
-        ip_with_country[ip] = country
-        print(f"IP: {ip} -> 国家: {country}")
+        if ip not in existing_ips:
+            country = get_ip_country(ip)
+            ip_with_country[ip] = country
+            print(f"IP: {ip} -> 国家代码: {country}")
+        else:
+            ip_with_country[ip] = existing_ips[ip]  # 已有的国家代码直接复用
 
-    # 将新的 IP 地址去重并写入文件
-    all_ips = existing_ips.union(ip_with_country.keys())  # 合并已存在的和新的 IP 地址
+    # 保存结果到文件
+    all_ips = {**existing_ips, **ip_with_country}
     with open('ip.txt', 'w') as file:
-        for ip in sorted(all_ips):  # 按字母顺序排序
-            # 输出格式：IP#国家简称（没有空格）
-            file.write(f"{ip}#{ip_with_country.get(ip, 'Unknown')}\n")
+        for ip, country in sorted(all_ips.items()):  # 按 IP 排序
+            file.write(f"{ip}#{country}\n")
 
-    print(f"新 IP 已保存到 ip.txt，总计新增 {len(new_ips)} 个 IP 地址")
-
-def is_valid_ip(ip):
-    """简单验证 IPv4 地址的正则"""
-    return re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', ip)
+    print(f"IP 地址已保存到 ip.txt，总计 {len(all_ips)} 个 IP 地址")
 
 if __name__ == '__main__':
     fetch_ips()
