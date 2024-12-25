@@ -1,17 +1,33 @@
 from ipwhois import IPWhois
 import requests
+import re
+import os
+from bs4 import BeautifulSoup
 
 def get_ip_country(ip):
     """根据 IP 获取国家代码"""
+    # 使用 ipwhois 查询
     try:
-        # 使用 ipwhois 获取 IP 国家信息
         ipwhois = IPWhois(ip)
         result = ipwhois.lookup_rdap()
         country = result.get('country', 'Unknown')  # 如果没有找到国家代码，则返回 'Unknown'
-        return country
+        if country != 'Unknown':
+            return country
     except Exception as e:
-        print(f"查询 {ip} 时出错: {e}")
-        return 'Unknown'
+        print(f"ipwhois 查询失败: {e}")
+    
+    # 使用 ip-api 查询
+    try:
+        response = requests.get(f'http://ip-api.com/json/{ip}?fields=countryCode', timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        if data.get('status') == 'fail':
+            return 'Unknown'
+        return data.get('countryCode', 'Unknown')
+    except requests.RequestException as e:
+        print(f"ip-api 查询失败: {e}")
+    
+    return 'Unknown'
 
 def fetch_ips():
     target_urls = [
