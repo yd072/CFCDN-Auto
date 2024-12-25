@@ -33,17 +33,37 @@ def fetch_ips():
         except Exception as e:
             print(f"抓取 {url} 时发生错误: {e}")
 
+    # 获取 IP 对应的国家简称
+    ip_with_country = {}
+    for ip in new_ips:
+        country = get_ip_country(ip)
+        ip_with_country[ip] = country
+        print(f"IP: {ip} -> 国家: {country}")
+
     # 将新的 IP 地址去重并写入文件
-    all_ips = existing_ips.union(new_ips)  # 合并已存在的和新的 IP 地址
+    all_ips = existing_ips.union(ip_with_country.keys())  # 合并已存在的和新的 IP 地址
     with open('ip.txt', 'w') as file:
         for ip in sorted(all_ips):  # 按字母顺序排序
-            file.write(ip + '\n')
+            # 输出格式：IP#国家简称（没有空格）
+            file.write(f"{ip}#{ip_with_country.get(ip, 'Unknown')}\n")
 
     print(f"新 IP 已保存到 ip.txt，总计新增 {len(new_ips)} 个 IP 地址")
 
 def is_valid_ip(ip):
     """简单验证 IPv4 地址的正则"""
     return re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', ip)
+
+def get_ip_country(ip):
+    """根据 IP 获取国家简称"""
+    try:
+        # 使用 ipinfo.io API 获取国家信息
+        response = requests.get(f'http://ipinfo.io/{ip}/json', timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        # 返回国家信息（如果没有则返回 'Unknown'）
+        return data.get('country', 'Unknown')
+    except requests.RequestException:
+        return 'Unknown'
 
 if __name__ == '__main__':
     fetch_ips()
