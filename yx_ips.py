@@ -1,82 +1,90 @@
-import requests
-from bs4 import BeautifulSoup
+import asyncio
+import logging
 import re
+from pyppeteer import launch
 
-# 定义请求头
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Referer': 'https://example.com',
-}
+# 设置日志格式
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
-# 定义目标网址
-urls = [
-    "https://stock.hostmonit.com/CloudFlareYes",
-]
+class StealthReader:
+    def __init__(self, target_url):
+        self.target_url = target_url
+        self.browser = None
+        self.page = None
 
-# 定义延迟数据的正则表达式
-latency_pattern = re.compile(r'(\d+(\.\d+)?)\s*(ms|毫秒|milliseconds|秒)?')
+    async def __aenter__(self):
+        await self.init_browser()
+        return self
 
-# 提取表格数据的函数
-def extract_table_data(url):
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        
-        # 打印返回状态码和前500个字符
-        print(f"Request to {url} returned status code {response.status_code}")
-        print(f"First 500 characters of page content:\n{response.text[:500]}")  # 打印前500字符
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.browser:
+            await self.browser.close()
 
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            return soup
-        else:
-            print(f"Failed to fetch data from {url}. Status code: {response.status_code}")
-    except requests.RequestException as e:
-        print(f"Request failed for {url}: {e}")
-    return None
+    async def init_browser(self):
+        logging.info(f"初始化浏览器... 目标网站: {self.target_url}")
+        self.browser = await launch({
+            'headless': True,
+            'args': [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-infobars',
+                '--disable-blink-features=AutomationControlled',
+                '--disable-gpu',
+                '--disable-dev-shm-usage',
+            ],
+            'ignoreHTTPSErrors': True,
+            'defaultViewport': None
+        })
+        self.page = await self.browser.newPage()
 
-# 处理每个网址的数据
-def process_site_data(url):
-    print(f"Processing URL: {url}")
-    soup = extract_table_data(url)
-    if not soup:
-        print(f"No data found for {url}")
-        return []
+    async def scrape(self):
+        """抓取 IP 信息并保存到文件"""
+        logging.info(f"开始访问目标网页: {self.target_url}")
+        try:
+            await self.page.goto(self.target_url, {'waitUntil': 'domcontentloaded'})
 
-    data = []
-    try:
-        # 针对 stock.hostmonit.com 网站
-        if "stock.hostmonit.com" in url:
-            rows = soup.find_all('tr', class_=re.compile(r'el-table__row'))
-            print(f"Found {len(rows)} rows in stock.hostmonit.com")  # 打印找到的行数
-            for row in rows:
-                columns = row.find_all('td')
-                if len(columns) >= 3:
-                    ip_address = columns[1].text.strip()  # 提取 IP 地址
-                    print(f"Extracted IP: {ip_address}")  # 打印提取的 IP 地址
-                    data.append(ip_address)
+            # 等待页面加载完成
+            await asyncio.sleep(2)
 
-    except Exception as e:
-        print(f"Error processing {url}: {e}")
+            logging.info(f"开始提取目标网站的 IP 信息: {self.target_url}")
+            # 提取整个页面的 HTML
+            page_content = await self.page.content()
 
-    return data
+            # 使用正则表达式匹配 IP 地址
+            ip_match = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', page_content)
+            if ip_match:
+                logging.info(f"找到的 IP 地址: {ip_match}")
 
-# 主函数
-def main():
-    all_data = []
-    for url in urls:
-        site_data = process_site_data(url)
-        all_data.extend(site_data)
+                # 将 IP 保存到文件
+                with open("ip.txt", "a") as file:
+                    for ip_address in ip_match:
+                        file.write(f"{self.target_url} - {ip_address}\n")
+                logging.info(f"目标网站的 IP 地址已保存到 ip.txt 文件")
+            else:
+                logging.info(f"未找到符合格式的 IP 地址: {self.target_url}")
+        except Exception as e:
+            logging.error(f"提取 IP 地址时出错: {e}")
 
-    # 去重并保存到文件
-    unique_data = list(set(all_data))
-    if unique_data:
-        with open('ip.txt', 'w', encoding='utf-8') as f:
-            for ip in unique_data:
-                f.write(ip + '\n')
-        print("Filtered IPs saved to ip.txt")
-    else:
-        print("No IPs found.")
+    async def run(self):
+        """主程序入口"""
+        await self.scrape()
+
+async def main():
+    # 定义多个目标网站
+    target_urls = [
+        'https://stock.hostmonit.com/CloudFlareYes',
+        'https://example.com',
+        'https://another-example.com'
+    ]
+
+    # 遍历所有目标网站
+    for url in target_urls:
+        async with StealthReader(url) as reader:
+            await reader.run()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
