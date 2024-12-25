@@ -13,7 +13,7 @@ def fetch_ips():
     existing_ips = set()
     if os.path.exists('ip.txt'):
         with open('ip.txt', 'r') as file:
-            existing_ips = set(line.strip() for line in file)
+            existing_ips = set(line.strip().split('#')[0] for line in file)
 
     new_ips = set()
 
