@@ -3,7 +3,7 @@ name: YX IPs and DNS
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 8,20 * * *' # 每12小时运行一次
+    - cron: '0 8,20 * * *' # 每天 08:00 和 20:00 触发
 
 jobs:
   run-and-commit:
