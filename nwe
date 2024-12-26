@@ -1,29 +1,20 @@
-import time
-import concurrent.futures
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 import requests
 import re
-import os
-import threading
-from queue import Queue
 import eventlet
 
-eventlet.monkey_patch()
-
-# 初始URL列表
+# 目标 URL 列表
 urls = [
     "http://1.196.55.1:9901",
     "http://1.197.249.1:9901",
     # 其他URL略...
 ]
 
-# 修改URL以生成子网范围内的所有IP
+# 修改 URL 生成子网范围的所有地址
 def modify_urls(url):
     modified_urls = []
     ip_start_index = url.find("//") + 2
     ip_end_index = url.find(":", ip_start_index)
-    base_url = url[:ip_start_index]  # http:// or https://
+    base_url = url[:ip_start_index]
     ip_address = url[ip_start_index:ip_end_index]
     port = url[ip_end_index:]
     ip_end = "/iptv/live/1000.json?key=txiptv"
@@ -33,48 +24,24 @@ def modify_urls(url):
         modified_urls.append(modified_url)
     return modified_urls
 
-# 检测URL是否可用
+# 检查 URL 是否有效
 def is_url_accessible(url):
     try:
         response = requests.get(url, timeout=0.5)
         if response.status_code == 200:
             return url
-    except requests.exceptions.RequestException:
+    except:
         pass
     return None
 
-# 初始化URL列表并去重
-x_urls = []
-for url in urls:
-    ip_start_index = url.find("//") + 2
-    ip_end_index = url.find(":", ip_start_index)
-    ip_dot_start = url.find(".") + 1
-    ip_dot_second = url.find(".", ip_dot_start) + 1
-    ip_dot_three = url.find(".", ip_dot_second) + 1
-    base_url = url[:ip_start_index]
-    ip_address = url[ip_start_index:ip_dot_three]
-    port = url[ip_end_index:]
-    ip_end = "1"
-    modified_ip = f"{ip_address}{ip_end}"
-    x_url = f"{base_url}{modified_ip}{port}"
-    x_urls.append(x_url)
-urls = set(x_urls)
-
-# 多线程检查可用URL
+# 获取可用 URL
 valid_urls = []
-with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
-    futures = []
-    for url in urls:
-        modified_urls = modify_urls(url)
-        for modified_url in modified_urls:
-            futures.append(executor.submit(is_url_accessible, modified_url))
+for url in urls:
+    for modified_url in modify_urls(url):
+        if is_url_accessible(modified_url):
+            valid_urls.append(modified_url)
 
-    for future in concurrent.futures.as_completed(futures):
-        result = future.result()
-        if result:
-            valid_urls.append(result)
-
-# 处理JSON数据并提取频道
+# 提取频道
 results = []
 for url in valid_urls:
     try:
@@ -85,55 +52,22 @@ for url in valid_urls:
                 name = item.get('name')
                 urlx = item.get('url')
                 if urlx and not urlx.startswith("http"):
-                    ip_start_index = url.find("//") + 2
-                    ip_index_second = url.find("/", ip_start_index)
-                    base_url = url[:url.find("/", ip_start_index)]
-                    urlx = f"{base_url}{urlx}"
+                    base_url = url.split('/')[2]
+                    urlx = f"http://{base_url}{urlx}"
                 if name and urlx:
                     name = re.sub(r"CCTV(\d+)台", r"CCTV\1", name)
                     results.append(f"{name},{urlx}")
     except:
         continue
 
-# 下载频道数据
-task_queue = Queue()
-results = []
-error_channels = []
+# 保存 M3U 文件
+with open("itvlist.m3u", 'w', encoding='utf-8') as m3u_file:
+    m3u_file.write('#EXTM3U\n')
+    for result in results:
+        name, url = result.split(',')
+        m3u_file.write(f"#EXTINF:-1,{name}\n{url}\n")
 
-# 工作线程
-def worker():
-    while True:
-        channel_name, channel_url = task_queue.get()
-        try:
-            channel_url_t = channel_url.rstrip(channel_url.split('/')[-1])
-            ts_url = f"{channel_url_t}1.ts"
-            with eventlet.Timeout(5, False):
-                response = requests.get(ts_url, timeout=1).content
-                file_size = len(response)
-                normalized_speed = file_size / 1024 / 1024
-                results.append((channel_name, channel_url, f"{normalized_speed:.3f} MB/s"))
-        except:
-            error_channels.append((channel_name, channel_url))
-        finally:
-            task_queue.task_done()
-
-# 创建工作线程
-num_threads = 10
-for _ in range(num_threads):
-    t = threading.Thread(target=worker, daemon=True)
-    t.start()
-
-# 添加任务到队列
-channels = [(result.split(',')[0], result.split(',')[1]) for result in results]
-for channel in channels:
-    task_queue.put(channel)
-
-# 等待任务完成
-task_queue.join()
-
-# 排序并写入文件
-results.sort(key=lambda x: x[0])
-with open("itvlist.m3u", 'w', encoding='utf-8') as file:
-    file.write('#EXTM3U\n')
-    for channel_name, channel_url, speed in results:
-        file.write(f"#EXTINF:-1,{channel_name}\n{channel_url}\n")
+# 保存 TXT 文件
+with open("results.txt", 'w', encoding='utf-8') as txt_file:
+    for result in results:
+        txt_file.write(f"{result}\n")
