@@ -4,6 +4,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import re
+from webdriver_manager.chrome import ChromeDriverManager
 from time import sleep
 
 def extract_ips_from_web(url):
@@ -17,19 +18,23 @@ def extract_ips_from_web(url):
         chrome_options.add_argument("--disable-gpu")  # 禁用 GPU，加速渲染
         chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")  # 模拟真实浏览器请求头
         
-        # 启动 Chrome 浏览器（确保 chromedriver 可执行路径正确）
-        driver = webdriver.Chrome(options=chrome_options)
+        # 启动 Chrome 浏览器（使用 webdriver_manager 自动管理 chromedriver）
+        print("启动浏览器...")
+        driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
         
         # 获取页面
+        print(f"访问页面: {url}")
         driver.get(url)
 
         # 等待页面加载完成，直到页面的某个元素出现
+        print("等待页面加载...")
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
 
         # 获取页面的 HTML 内容
         page_source = driver.page_source
+        print("页面加载完成，开始提取 IP 地址...")
 
         # 解析页面
         ip_addresses = re.findall(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', page_source)
