@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import argparse
 
 # 配置 Fofa API 信息
-FOFA_EMAIL = "ozyguv"  # 替换为你的邮箱
+FOFA_EMAIL = "ozyguv@mailto.plus"  # 替换为你的邮箱
 FOFA_API_KEY = "https://fofa.info/api/v1/search/all?key=05f9b819fbe15a6652cbdee5564b2ab4&qbase64=c2VydmVyPT0iY2xvdWRmbGFyZSIgJiYgcG9ydD09IjQ0MyIgJiYgaGVhZGVyPSJGb3JiaWRkZW4iICYmIGNvdW50cnk9PSJVUyIgJiYgYXNuIT0iMTMzMzUiICYmIGFzbiE9IjIwOTI0MiI="  # 替换为你的 API Key
 RESULT_COUNT = 100  # 获取结果的数量
 
