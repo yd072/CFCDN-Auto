@@ -1,6 +1,7 @@
+import requests
 import re
-import os
 from ipwhois import IPWhois
+from bs4 import BeautifulSoup
 
 def get_ip_country(ip):
     """
@@ -14,6 +15,24 @@ def get_ip_country(ip):
     except Exception as e:
         print(f"查询 {ip} 的国家代码失败: {e}")
         return 'Unknown'
+
+def extract_ips_from_web(url):
+    """
+    从指定网页提取所有 IP 地址
+    """
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            # 使用正则表达式提取所有 IP 地址
+            ip_addresses = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', soup.text)
+            return ip_addresses
+        else:
+            print(f"无法访问网页 {url}")
+            return []
+    except Exception as e:
+        print(f"抓取网页 {url} 时发生错误: {e}")
+        return []
 
 def save_ips_to_file(ips):
     """
@@ -38,21 +57,25 @@ def is_valid_ip(ip):
     """验证是否是有效的 IPv4 地址"""
     return re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', ip)
 
-def fetch_and_save_ips(ips):
+def fetch_and_save_ips(urls):
     """
-    过滤有效 IP 地址并保存
+    从多个 URL 提取 IP 地址并保存
     """
-    valid_ips = [ip for ip in ips if is_valid_ip(ip)]
+    all_ips = set()
+    for url in urls:
+        ips = extract_ips_from_web(url)
+        all_ips.update(ips)
+
+    # 过滤有效 IP 地址并保存
+    valid_ips = [ip for ip in all_ips if is_valid_ip(ip)]
     save_ips_to_file(valid_ips)
 
 if __name__ == '__main__':
-    # 假设有一些 IP 地址列表，实际使用时可以替换为你获取的 IP 列表
-    ip_addresses = [
-        '192.168.1.1',
-        '8.8.8.8',
-        '123.45.67.89',
-        '10.0.0.1'
+    # 提供要抓取 IP 地址的 URL 列表
+    target_urls = [
+        'https://stock.hostmonit.com/CloudFlareYes',
+        'https://cf.090227.xyz',  # 你可以添加更多目标 URL
     ]
-
-    # 执行保存操作
-    fetch_and_save_ips(ip_addresses)
+    
+    # 执行抓取和保存操作
+    fetch_and_save_ips(target_urls)
