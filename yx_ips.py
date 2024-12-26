@@ -1,7 +1,8 @@
-import requests
+from selenium import webdriver
+from selenium.webdriver.common.by import By
 import re
 from ipwhois import IPWhois
-from bs4 import BeautifulSoup
+import time
 
 def get_ip_country(ip):
     """
@@ -18,22 +19,23 @@ def get_ip_country(ip):
 
 def extract_ips_from_web(url):
     """
-    从指定网页提取所有 IP 地址
+    从指定网页提取所有 IP 地址（使用 Selenium 获取动态加载的内容）
     """
     try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            # 打印网页内容以调试
-            print("网页内容:")
-            print(response.text[:1000])  # 打印前 1000 个字符
+        # 配置 WebDriver（假设使用 Chrome）
+        driver = webdriver.Chrome(executable_path='/path/to/chromedriver')  # 修改为您的 chromedriver 路径
+        driver.get(url)
+        
+        # 等待页面加载，确保动态内容加载完毕
+        time.sleep(5)  # 可以调整等待时间
+        
+        # 获取网页的源代码
+        page_source = driver.page_source
+        driver.quit()
 
-            soup = BeautifulSoup(response.text, 'html.parser')
-            # 使用正则表达式提取所有 IP 地址
-            ip_addresses = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', soup.text)
-            return ip_addresses
-        else:
-            print(f"无法访问网页 {url}")
-            return []
+        # 使用正则表达式提取 IP 地址
+        ip_addresses = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', page_source)
+        return ip_addresses
     except Exception as e:
         print(f"抓取网页 {url} 时发生错误: {e}")
         return []
@@ -57,10 +59,6 @@ def save_ips_to_file(ips):
 
     print(f"IP 地址已保存到 ip.txt，总计 {len(ip_with_country)} 个 IP 地址")
 
-def is_valid_ip(ip):
-    """验证是否是有效的 IPv4 地址"""
-    return re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', ip)
-
 def fetch_and_save_ips(urls):
     """
     从多个 URL 提取 IP 地址并保存
@@ -71,7 +69,7 @@ def fetch_and_save_ips(urls):
         all_ips.update(ips)
 
     # 过滤有效 IP 地址并保存
-    valid_ips = [ip for ip in all_ips if is_valid_ip(ip)]
+    valid_ips = [ip for ip in all_ips if re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', ip)]
     save_ips_to_file(valid_ips)
 
 if __name__ == '__main__':
