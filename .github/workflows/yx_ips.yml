@@ -24,7 +24,20 @@ jobs:
         pip install requests beautifulsoup4 ipwhois
 
     - name: Run the yx_ips script
-      run: python yx_ips.py
+      run: |
+        echo "Running the yx_ips script..."
+        python yx_ips.py
+        echo "yx_ips script completed."
+
+    - name: Check if ip.txt exists and has content
+      run: |
+        echo "Checking if ip.txt exists and has content..."
+        if [ -f "ip.txt" ]; then
+          echo "ip.txt exists. Content:"
+          cat ip.txt
+        else
+          echo "ip.txt does not exist."
+        fi
 
     - name: Check if ip.txt has changed
       run: |
@@ -34,6 +47,7 @@ jobs:
 
     - name: Commit and push changes
       run: |
+        echo "Attempting to commit changes..."
         git config --global user.email "actions@github.com"
         git config --global user.name "GitHub Actions"
         git add ip.txt
