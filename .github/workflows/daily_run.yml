@@ -36,6 +36,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
 
+    - name: Debugging
+      run: |
+        echo "Running with query: ${{ inputs.query }}"
+        echo "Output file: ${{ inputs.output }}"
+
     - name: Run Fofa script
       run: |
         python fofa_search.py --query="${{ inputs.query }}" --days=${{ inputs.days }} --output="${{ inputs.output }}"
