@@ -90,7 +90,7 @@ def fetch_and_save_ips(urls):
 
 if __name__ == '__main__':
     target_urls = [
-        'https://stock.hostmonit.com/CloudFlareYes',
+
         'https://cf.090227.xyz',
     ]
     
