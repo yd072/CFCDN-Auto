@@ -1,7 +1,10 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from bs4 import BeautifulSoup
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import re
+from time import sleep
 
 def extract_ips_from_web(url):
     """
@@ -11,25 +14,32 @@ def extract_ips_from_web(url):
         # 设置 Chrome 配置，避免打开浏览器窗口
         chrome_options = Options()
         chrome_options.add_argument("--headless")  # 无头模式，不打开浏览器窗口
-        driver = webdriver.Chrome(options=chrome_options)  # 指定 ChromeDriver 路径
+        chrome_options.add_argument("--disable-gpu")  # 禁用 GPU，加速渲染
+        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")  # 模拟真实浏览器请求头
+        
+        # 启动 Chrome 浏览器（确保 chromedriver 可执行路径正确）
+        driver = webdriver.Chrome(options=chrome_options)
+        
+        # 获取页面
         driver.get(url)
 
-        # 等待页面加载完成
-        driver.implicitly_wait(5)  # 等待最多 5 秒
+        # 等待页面加载完成，直到页面的某个元素出现
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
 
         # 获取页面的 HTML 内容
         page_source = driver.page_source
 
         # 解析页面
-        soup = BeautifulSoup(page_source, 'html.parser')
-
-        # 使用正则表达式提取所有 IP 地址
-        ip_addresses = re.findall(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', soup.text)
+        ip_addresses = re.findall(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', page_source)
 
         if not ip_addresses:
             print(f"未从 {url} 提取到任何 IP 地址")
         
-        driver.quit()  # 退出浏览器
+        # 关闭浏览器
+        driver.quit()
+        
         return ip_addresses
 
     except Exception as e:
