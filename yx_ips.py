@@ -1,16 +1,12 @@
-from ipwhois import IPWhois
 import requests
 import re
 import os
 from bs4 import BeautifulSoup
-
-def is_valid_ip(ip):
-    """验证是否是有效的 IPv4 地址"""
-    return re.match(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', ip)
+from ipwhois import IPWhois
 
 def get_ip_country(ip):
     """
-    使用 ipwhois 查询 IP 的国家代码
+    使用 IPWhois 查询 IP 的国家简称
     """
     try:
         ipwhois = IPWhois(ip)
@@ -23,7 +19,7 @@ def get_ip_country(ip):
 
 def fetch_ips():
     """
-    抓取目标网站的 IP 地址并查询国家代码
+    抓取目标网站的 IP 地址并保存到 ip.txt，格式为 IP#国家简称
     """
     target_urls = [
         'https://stock.hostmonit.com/CloudFlareYes',
@@ -31,33 +27,42 @@ def fetch_ips():
     ]
 
     # 读取已存在的 IP 地址并去重
-    existing_ips = {}
+    existing_ips = set()
     if os.path.exists('ip.txt'):
         with open('ip.txt', 'r') as file:
             for line in file:
                 parts = line.strip().split('#')
                 if len(parts) == 2:
-                    existing_ips[parts[0]] = parts[1]
+                    existing_ips.add(parts[0])
 
     new_ips = set()
 
-    # 查询 IP 对应的国家代码
-    ip_with_country = {}
-    for ip in new_ips:
-        if ip not in existing_ips:
-            country = get_ip_country(ip)
-            ip_with_country[ip] = country
-            print(f"IP: {ip} -> 国家代码: {country}")
-        else:
-            ip_with_country[ip] = existing_ips[ip]  # 已有的国家代码直接复用
+    # 从目标网站抓取 IP 地址
+    for url in target_urls:
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                # 使用正则表达式提取网页中的所有 IP 地址
+                ip_addresses = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', soup.text)
+                new_ips.update(ip_addresses)
+        except Exception as e:
+            print(f"抓取 {url} 时发生错误: {e}")
 
-    # 保存结果到文件
-    all_ips = {**existing_ips, **ip_with_country}
+    # 去重并查询 IP 的国家
+    all_ips = existing_ips.union(new_ips)
+    ip_with_country = {}
+
+    for ip in all_ips:
+        country = get_ip_country(ip)
+        ip_with_country[ip] = country
+
+    # 保存 IP 和国家信息到文件
     with open('ip.txt', 'w') as file:
-        for ip, country in sorted(all_ips.items()):  # 按 IP 排序
+        for ip, country in sorted(ip_with_country.items()):  # 按 IP 排序
             file.write(f"{ip}#{country}\n")
 
-    print(f"IP 地址已保存到 ip.txt，总计 {len(all_ips)} 个 IP 地址")
+    print(f"IP 地址已保存到 ip.txt，总计 {len(ip_with_country)} 个 IP 地址")
 
 if __name__ == '__main__':
     fetch_ips()
