@@ -1,0 +1,39 @@
+name: Daily Fofa Search
+
+on:
+  schedule:
+    # 每天 0 点运行
+    - cron: "0 0 * * *"
+
+jobs:
+  fofa-search:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 检出代码
+    - name: Check out repository
+      uses: actions/checkout@v3
+
+    # 设置 Python 环境
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.x
+
+    # 安装依赖
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
+
+    # 运行脚本并保存结果
+    - name: Run Fofa script
+      run: |
+        python fofa_search.py --query="server=="cloudflare" && port=="443" && header="Forbidden" && country=="US" && asn!="13335" && asn!="209242"" --days=30 --output=ip.txt
+
+    # 上传生成的 ip.txt 文件为构件
+    - name: Upload ip.txt
+      uses: actions/upload-artifact@v3
+      with:
+        name: ip-list
+        path: ip.txt
