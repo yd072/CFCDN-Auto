@@ -2,7 +2,7 @@ name: Daily Fofa Search
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 * * *"  # 每天 0 点运行
   workflow_dispatch:
     inputs:
       query:
@@ -36,14 +36,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
 
-    - name: Debugging
-      run: |
-        echo "Running with query: ${{ inputs.query }}"
-        echo "Output file: ${{ inputs.output }}"
-
     - name: Run Fofa script
       run: |
         python fofa_search.py --query="${{ inputs.query }}" --days=${{ inputs.days }} --output="${{ inputs.output }}"
+      env:
+        FOFA_EMAIL: ${{ secrets.FOFA_EMAIL }}
+        FOFA_API_KEY: ${{ secrets.FOFA_API_KEY }}
 
     - name: Upload output file
       uses: actions/upload-artifact@v3
