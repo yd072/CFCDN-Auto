@@ -8,8 +8,13 @@ def extract_ips_from_web(url):
     """
     try:
         response = requests.get(url)
+        print(f"访问 {url}，状态码: {response.status_code}")
+        
         if response.status_code == 200:
             soup = BeautifulSoup(response.text, 'html.parser')
+            # 打印网页的前1000个字符，检查网页内容
+            print(f"网页内容（前1000字符）: \n{response.text[:1000]}")
+            
             # 使用正则表达式提取所有 IP 地址
             ip_addresses = re.findall(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', soup.text)
             
