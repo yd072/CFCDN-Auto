@@ -23,6 +23,10 @@ def extract_ips_from_web(url):
     try:
         response = requests.get(url)
         if response.status_code == 200:
+            # 打印网页内容以调试
+            print("网页内容:")
+            print(response.text[:1000])  # 打印前 1000 个字符
+
             soup = BeautifulSoup(response.text, 'html.parser')
             # 使用正则表达式提取所有 IP 地址
             ip_addresses = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', soup.text)
