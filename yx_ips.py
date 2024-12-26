@@ -23,19 +23,19 @@ def extract_ips_from_web(url):
     try:
         response = requests.get(url)
         if response.status_code == 200:
-            # 打印网页内容以调试
-            print("网页内容:")
-            print(response.text[:1000])  # 打印前 1000 个字符，检查 HTML 是否包含 IP 地址
+            # 打印网页内容的前1000个字符，查看是否成功加载
+            print(f"网页内容前1000字符：\n{response.text[:1000]}")  # 打印前1000字符
 
             soup = BeautifulSoup(response.text, 'html.parser')
             # 使用正则表达式提取所有 IP 地址
             ip_addresses = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', soup.text)
             
+            # 如果没有提取到 IP 地址，输出提示
             if not ip_addresses:
                 print(f"未从 {url} 提取到任何 IP 地址")
             return ip_addresses
         else:
-            print(f"无法访问网页 {url}")
+            print(f"无法访问网页 {url}, 状态码: {response.status_code}")
             return []
     except Exception as e:
         print(f"抓取网页 {url} 时发生错误: {e}")
