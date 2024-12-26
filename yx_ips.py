@@ -41,21 +41,6 @@ def fetch_ips():
 
     new_ips = set()
 
-    # 抓取 IP 地址
-    for url in target_urls:
-        print(f"正在抓取 {url} 的 IP 地址...")
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, 'html.parser')
-
-            # 提取 IP 地址
-            ips = set(soup.find_all(text=lambda text: text and is_valid_ip(text)))
-            new_ips.update(ips)
-            print(f"从 {url} 抓取到 {len(ips)} 个 IP 地址")
-        except Exception as e:
-            print(f"抓取 {url} 时发生错误: {e}")
-
     # 查询 IP 对应的国家代码
     ip_with_country = {}
     for ip in new_ips:
