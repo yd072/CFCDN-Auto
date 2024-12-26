@@ -1,70 +1,60 @@
 import requests
-from bs4 import BeautifulSoup
 import re
+import os
 
 def extract_ips_from_web(url):
     """
-    使用 requests 获取网页内容并提取所有 IP 地址
+    从指定网页提取 IP 地址
     """
     try:
-        # 发送 HTTP 请求获取网页内容
-        print(f"正在访问 {url} ...")
-        response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+        # 设置请求头模拟浏览器访问
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, headers=headers, timeout=10)
         
         # 检查响应状态
-        if response.status_code != 200:
-            print(f"无法访问 {url}，状态码: {response.status_code}")
-            return []
-
-        # 使用 BeautifulSoup 解析 HTML
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        # 提取页面中的所有文本
-        text = soup.get_text()
-
-        # 使用正则表达式提取 IP 地址
-        ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
-        ip_addresses = re.findall(ip_pattern, text)
-
-        if not ip_addresses:
-            print(f"未从 {url} 提取到任何 IP 地址")
+        if response.status_code == 200:
+            # 使用正则表达式提取 IP 地址
+            return re.findall(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', response.text)
         else:
-            print(f"从 {url} 提取到 {len(ip_addresses)} 个 IP 地址")
-        
-        return ip_addresses
-
+            print(f"无法访问 {url}, 状态码: {response.status_code}")
+            return []
     except Exception as e:
         print(f"抓取网页 {url} 时发生错误: {e}")
         return []
 
-def save_ips_to_file(ips):
+def save_ips_to_file(ips, filename='ip.txt'):
     """
-    将 IP 地址保存到 ip.txt 文件中
+    将提取的 IP 地址保存到文件
     """
-    with open('ip.txt', 'w') as file:
-        for ip in sorted(set(ips)):  # 去重并按 IP 排序
+    # 删除已有文件，确保文件干净
+    if os.path.exists(filename):
+        os.remove(filename)
+    
+    # 写入文件
+    with open(filename, 'w') as file:
+        for ip in sorted(set(ips)):  # 去重并排序
             file.write(f"{ip}\n")
     
-    print(f"IP 地址已保存到 ip.txt，总计 {len(set(ips))} 个 IP 地址")
+    print(f"提取到 {len(set(ips))} 个 IP 地址，已保存到 {filename}")
 
 def fetch_and_save_ips(urls):
     """
-    从多个 URL 提取 IP 地址并保存
+    从多个 URL 提取 IP 地址并保存到文件
     """
     all_ips = []
-
-    # 提取所有 IP 地址
     for url in urls:
+        print(f"正在提取 {url} 的 IP 地址...")
         ips = extract_ips_from_web(url)
         all_ips.extend(ips)
-
-    # 保存结果到文件
+    
     save_ips_to_file(all_ips)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    # 要提取 IP 的目标 URL 列表
     target_urls = [
-        'https://ip.164746.xyz/ipTop10.html',  # 示例 URL 1
-        'https://cf.090227.xyz',              # 示例 URL 2
+        "https://cf.090227.xyz",  # 示例 URL
+        "https://ip.164746.xyz/ipTop10.html",  # 示例 URL
     ]
     
+    # 提取 IP 并保存
     fetch_and_save_ips(target_urls)
