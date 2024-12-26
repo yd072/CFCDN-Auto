@@ -1,29 +1,37 @@
-import requests
-import re
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
+import re
 
 def extract_ips_from_web(url):
     """
-    从指定网页提取所有 IP 地址
+    使用 Selenium 获取网页内容并提取所有 IP 地址
     """
     try:
-        response = requests.get(url)
-        print(f"访问 {url}，状态码: {response.status_code}")
+        # 设置 Chrome 配置，避免打开浏览器窗口
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")  # 无头模式，不打开浏览器窗口
+        driver = webdriver.Chrome(options=chrome_options)  # 指定 ChromeDriver 路径
+        driver.get(url)
+
+        # 等待页面加载完成
+        driver.implicitly_wait(5)  # 等待最多 5 秒
+
+        # 获取页面的 HTML 内容
+        page_source = driver.page_source
+
+        # 解析页面
+        soup = BeautifulSoup(page_source, 'html.parser')
+
+        # 使用正则表达式提取所有 IP 地址
+        ip_addresses = re.findall(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', soup.text)
+
+        if not ip_addresses:
+            print(f"未从 {url} 提取到任何 IP 地址")
         
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            # 打印网页的前1000个字符，检查网页内容
-            print(f"网页内容（前1000字符）: \n{response.text[:1000]}")
-            
-            # 使用正则表达式提取所有 IP 地址
-            ip_addresses = re.findall(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', soup.text)
-            
-            if not ip_addresses:
-                print(f"未从 {url} 提取到任何 IP 地址")
-            return ip_addresses
-        else:
-            print(f"无法访问网页 {url}, 状态码: {response.status_code}")
-            return []
+        driver.quit()  # 退出浏览器
+        return ip_addresses
+
     except Exception as e:
         print(f"抓取网页 {url} 时发生错误: {e}")
         return []
