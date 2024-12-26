@@ -35,6 +35,8 @@ def extract_ips_from_web(url):
 
         # 使用正则表达式提取 IP 地址
         ip_addresses = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', page_source)
+        if not ip_addresses:
+            print(f"未从 {url} 提取到任何 IP 地址")
         return ip_addresses
     except Exception as e:
         print(f"抓取网页 {url} 时发生错误: {e}")
