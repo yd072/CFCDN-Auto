@@ -1,9 +1,9 @@
 name: YX IPs and DNS
 
 on:
-  workflow_dispatch: # 手动触发
+  workflow_dispatch:  # 手动触发
   schedule:
-    - cron: '0 8,20 * * *' # 每天 08:00 和 20:00 触发，UTC 时间
+    - cron: '0 8,20 * * *'  # 每天 08:00 和 20:00 触发，UTC 时间
 
 jobs:
   run-and-commit:
@@ -25,6 +25,13 @@ jobs:
 
     - name: Run the yx_ips script
       run: python yx_ips.py
+
+    - name: Check if ip.txt has changed
+      run: |
+        if git diff --exit-code ip.txt; then
+          echo "No changes to ip.txt"
+          exit 0  # 退出，跳过提交步骤
+        fi
 
     - name: Commit and push changes
       run: |
