@@ -28,10 +28,9 @@ jobs:
 
     - name: Check if ip.txt has changed
       run: |
-        if git diff --exit-code ip.txt; then
-          echo "No changes to ip.txt"
-          exit 0  # 退出，跳过提交步骤
-        fi
+        echo "Checking if ip.txt has changed..."
+        git status
+        git diff ip.txt || echo "No changes detected in ip.txt"
 
     - name: Commit and push changes
       run: |
