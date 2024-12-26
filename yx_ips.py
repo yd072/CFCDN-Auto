@@ -22,7 +22,7 @@ def fetch_ips():
     抓取目标网站的 IP 地址并保存到 ip.txt，格式为 IP#国家简称
     """
     target_urls = [
-        'https://stock.hostmonit.com/CloudFlareYes',
+        
         'https://cf.090227.xyz',  # 添加更多目标 URL
     ]
 
