@@ -19,8 +19,6 @@ def extract_ips_from_web(url):
         response = requests.get(url, headers=headers, timeout=10)
         
         if response.status_code == 200:
-            # 调试输出：打印网页内容的前500个字符
-            logging.debug(f"网页内容 (前500字符): {response.text[:500]}")
             return ip_pattern.findall(response.text)
         else:
             logging.warning(f"无法访问 {url}, 状态码: {response.status_code}")
